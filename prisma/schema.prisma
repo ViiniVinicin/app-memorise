@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id          String   @id @default(uuid())
+  nome        String
+  email       String   @unique
+  senha_hash  String
+  tema_escuro Boolean  @default(false)
+  criado_em   DateTime @default(now())
+  decks       Deck[]
+  estatisticas Estatistica[]
+}
+
+model Deck {
+  id          String   @id @default(uuid())
+  titulo      String
+  cor_hex     String   @default("#CCCCCC")
+  icone       String?
+  usuario_id  String
+  criado_em   DateTime @default(now())
+  usuario     Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  cartoes     Cartao[]
+}
+
+model Cartao {
+  id               String   @id @default(uuid())
+  frente           String
+  verso            String
+  imagem_url       String?
+  deck_id          String
+  proxima_revisao  DateTime @default(now())
+  intervalo_dias   Int      @default(0)
+  facilidade       Float    @default(2.5)
+  acertos_seguidos Int      @default(0)
+  deck             Deck     @relation(fields: [deck_id], references: [id], onDelete: Cascade)
+}
+
+model Estatistica {
+  id                String   @id @default(uuid())
+  usuario_id        String
+  data_estudo       DateTime @default(now())
+  cartoes_revisados Int      @default(0)
+  usuario           Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
