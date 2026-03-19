@@ -32,6 +32,26 @@ function authenticate(req, res, next) {
 }
 
 // ==========================================
+// ADMIN MIDDLEWARE
+// ==========================================
+async function authorizeAdmin(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { role: true }
+    });
+
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Admins only.' });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: 'Error checking permissions.' });
+  }
+}
+
+// ==========================================
 // BASE ROUTE
 // ==========================================
 app.get('/', (req, res) => {
@@ -112,6 +132,7 @@ app.post('/login', async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         dark_theme: user.dark_theme,
         created_at: user.created_at
       }
@@ -131,6 +152,7 @@ app.get('/me', authenticate, async (req, res) => {
         id: true,
         name: true,
         email: true,
+        role: true,
         dark_theme: true,
         created_at: true,
         _count: {
@@ -150,14 +172,15 @@ app.get('/me', authenticate, async (req, res) => {
   }
 });
 
-// Get all users
-app.get('/users', authenticate, async (req, res) => {
+// Get all users — admin only
+app.get('/users', authenticate, authorizeAdmin, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
         email: true,
+        role: true,
         dark_theme: true,
         created_at: true,
         _count: {
@@ -190,6 +213,7 @@ app.put('/me', authenticate, async (req, res) => {
         id: true,
         name: true,
         email: true,
+        role: true,
         dark_theme: true,
         created_at: true
       }
@@ -349,14 +373,9 @@ app.put('/decks/:id', authenticate, async (req, res) => {
 // Delete deck
 app.delete('/decks/:id', authenticate, async (req, res) => {
   try {
-    console.log('Deck ID received:', req.params.id);
-    console.log('User ID from token:', req.userId);
-
     const deckExists = await prisma.deck.findFirst({
       where: { id: req.params.id, user_id: req.userId }
     });
-
-     console.log('Deck found:', deckExists);
 
     if (!deckExists) {
       return res.status(404).json({ error: 'Deck not found.' });
