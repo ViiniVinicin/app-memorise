@@ -14,6 +14,9 @@ model User {
   password_hash String
   dark_theme    Boolean     @default(false)
   role          String      @default("user") // "user" or "admin"
+  google_id           String?     @unique
+  reset_token         String?
+  reset_token_expiry  DateTime?
   created_at    DateTime    @default(now())
   decks         Deck[]
   statistics    Statistic[]

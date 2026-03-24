@@ -4,6 +4,8 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');         // ← adicione
+const nodemailer = require('nodemailer');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -684,6 +686,206 @@ app.get('/stats/history', authenticate, async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Error fetching history.' });
   }
+});
+
+// ==========================================
+// FORGOT PASSWORD
+// ==========================================
+app.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Sempre responde com sucesso para não expor quais e-mails existem
+    if (!user) {
+      return res.json({ message: 'If this email exists, a reset link was sent.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
+
+    await prisma.user.update({
+      where: { email },
+      data: { reset_token: token, reset_token_expiry: expiry }
+    });
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: false,
+      requireTLS: true,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS.replace(/\s/g, '') // remove espaços da senha de app
+      }
+    });
+
+    // Verifica se a conexão está funcionando
+    await transporter.verify();
+
+    const resetUrl = `http://${process.env.EXPO_IP}:3000/redirect-reset?token=${token}`;
+
+    await transporter.sendMail({
+      from: `"MemoRise" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Redefinição de senha — MemoRise',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
+          <h2 style="color:#2E2832">Redefinir sua senha</h2>
+          <p style="color:#555">Recebemos uma solicitação para redefinir sua senha.</p>
+          <a href="http://${process.env.EXPO_IP}:3000/redirect-reset?token=${token}"
+            style="display:inline-block;padding:14px 28px;background:#D80E4E;
+                    color:#ffffff;border-radius:8px;text-decoration:none;
+                    font-weight:bold;font-size:16px;margin:16px 0">
+            Redefinir senha
+          </a>
+          <p style="color:#888;font-size:12px;margin-top:24px">
+            Link válido por 1 hora. Se não foi você, ignore este e-mail.
+          </p>
+        </div>
+      `
+    });
+
+    res.json({ message: 'If this email exists, a reset link was sent.' });
+  } catch (error) {
+      console.error('ERRO FORGOT PASSWORD:', error); // ← troque o console.error
+      res.status(500).json({ error: 'Error processing request.' });
+  }
+});
+
+// ==========================================
+// RESET PASSWORD
+// ==========================================
+app.post('/reset-password', async (req, res) => {
+  try {
+    const { token, new_password } = req.body;
+
+    if (!token || !new_password) {
+      return res.status(400).json({ error: 'Token and new password are required.' });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        reset_token: token,
+        reset_token_expiry: { gt: new Date() }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired token.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password_hash: hashedPassword,
+        reset_token: null,
+        reset_token_expiry: null
+      }
+    });
+
+    res.json({ message: 'Password reset successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error resetting password.' });
+  }
+});
+
+// ==========================================
+// GOOGLE OAUTH
+// ==========================================
+app.post('/auth/google', async (req, res) => {
+  try {
+    const { google_id, name, email } = req.body;
+
+    if (!google_id || !email) {
+      return res.status(400).json({ error: 'Google ID and email are required.' });
+    }
+
+    // Busca por google_id ou email (caso já exista conta normal)
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ google_id }, { email }] }
+    });
+
+    if (user) {
+      // Vincula google_id se ainda não tinha
+      if (!user.google_id) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { google_id }
+        });
+      }
+    } else {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          google_id,
+          password_hash: crypto.randomBytes(32).toString('hex') // senha aleatória
+        }
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful!',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        dark_theme: user.dark_theme,
+        created_at: user.created_at
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error with Google authentication.' });
+  }
+});
+
+app.get('/redirect-reset', (req, res) => {
+  const { token } = req.query;
+  const deepLink = `exp://${process.env.EXPO_IP}:8081/--/reset-password?token=${token}`;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="3;url=${deepLink}">
+        <title>MemoRise — Redirecionando...</title>
+        <style>
+          body { font-family: sans-serif; display: flex; flex-direction: column;
+                 align-items: center; justify-content: center; height: 100vh;
+                 background: #E0E9EE; margin: 0; }
+          h2 { color: #2E2832; }
+          p { color: #888; }
+          a { display: inline-block; margin-top: 16px; padding: 12px 24px;
+              background: #D80E4E; color: #fff; border-radius: 8px;
+              text-decoration: none; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <h2>Redirecionando para o MemoRise...</h2>
+        <p>Abrindo o aplicativo automaticamente.</p>
+        <a href="${deepLink}">Clique aqui se não abrir automaticamente</a>
+      </body>
+    </html>
+  `);
 });
 
 const PORT = 3000;
