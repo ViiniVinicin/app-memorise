@@ -13,6 +13,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+function stripNullChars(value) {
+  return typeof value === 'string' ? value.replace(/\u0000/g, '') : value;
+}
+
+function cleanText(value) {
+  return typeof value === 'string' ? stripNullChars(value).trim() : value;
+}
+
+function cleanEmail(value) {
+  return typeof value === 'string'
+    ? stripNullChars(value).trim().toLowerCase()
+    : value;
+}
+
+function cleanPassword(value) {
+  return typeof value === 'string' ? stripNullChars(value) : value;
+}
+
 // ==========================================
 // AUTH MIDDLEWARE
 // ==========================================
@@ -67,7 +85,9 @@ app.get('/', (req, res) => {
 // Register
 app.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const name = cleanText(req.body.name);
+    const email = cleanEmail(req.body.email);
+    const password = cleanPassword(req.body.password);
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email and password are required.' });
@@ -101,7 +121,8 @@ app.post('/register', async (req, res) => {
 // Login
 app.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = cleanEmail(req.body.email);
+    const password = cleanPassword(req.body.password);
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
@@ -202,7 +223,9 @@ app.get('/users', authenticate, authorizeAdmin, async (req, res) => {
 // Update current user profile
 app.put('/me', authenticate, async (req, res) => {
   try {
-    const { name, email, dark_theme } = req.body;
+    const name = req.body.name !== undefined ? cleanText(req.body.name) : undefined;
+    const email = req.body.email !== undefined ? cleanEmail(req.body.email) : undefined;
+    const { dark_theme } = req.body;
 
     const user = await prisma.user.update({
       where: { id: req.userId },
@@ -231,7 +254,8 @@ app.put('/me', authenticate, async (req, res) => {
 // Update password
 app.put('/me/password', authenticate, async (req, res) => {
   try {
-    const { current_password, new_password } = req.body;
+    const current_password = cleanPassword(req.body.current_password);
+    const new_password = cleanPassword(req.body.new_password);
 
     if (!current_password || !new_password) {
       return res.status(400).json({ error: 'Current and new password are required.' });
@@ -693,7 +717,7 @@ app.get('/stats/history', authenticate, async (req, res) => {
 // ==========================================
 app.post('/forgot-password', async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = cleanEmail(req.body.email);
 
     if (!email) {
       return res.status(400).json({ error: 'Email is required.' });
@@ -763,7 +787,8 @@ app.post('/forgot-password', async (req, res) => {
 // ==========================================
 app.post('/reset-password', async (req, res) => {
   try {
-    const { token, new_password } = req.body;
+    const token = cleanText(req.body.token);
+    const new_password = cleanPassword(req.body.new_password);
 
     if (!token || !new_password) {
       return res.status(400).json({ error: 'Token and new password are required.' });
@@ -803,7 +828,9 @@ app.post('/reset-password', async (req, res) => {
 // ==========================================
 app.post('/auth/google', async (req, res) => {
   try {
-    const { google_id, name, email } = req.body;
+    const google_id = cleanText(req.body.google_id);
+    const name = cleanText(req.body.name);
+    const email = cleanEmail(req.body.email);
 
     if (!google_id || !email) {
       return res.status(400).json({ error: 'Google ID and email are required.' });
