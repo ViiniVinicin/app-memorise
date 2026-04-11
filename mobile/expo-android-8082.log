@@ -1,0 +1,16 @@
+env: load .env.local
+env: export EXPO_PUBLIC_API_URL
+Starting project at D:\Programming\Projects\app-memorise\app-memorise\mobile
+React Compiler enabled
+Starting Metro Bundler
+› Opening exp://192.168.0.28:8082 on Small_Phone
+- Fetching Expo Go
+- Installing Expo Go on Small_Phone
+Waiting on http://localhost:8082
+Logs for your project will appear below.
+Android node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓░░░░░░░░░░░ 34.8% (318/539)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 93.2% ( 943/1011)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.3% (1178/1182)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.7% (1181/1183)
+Android Bundled 14718ms node_modules\expo-router\entry.js (1183 modules)

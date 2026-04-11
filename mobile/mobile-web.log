@@ -1,0 +1,27 @@
+
+> app-memorise-mobile@1.0.0 web
+> expo start --web
+
+env: load .env.local
+env: export EXPO_PUBLIC_API_URL
+Starting project at D:\Programming\Projects\app-memorise\app-memorise\mobile
+React Compiler enabled
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% ( 26/119)
+λ node_modules\expo-router\node\render.js ▓▓░░░░░░░░░░░░░░ 15.3% (113/289)
+Web node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 45.5% (315/467)
+λ node_modules\expo-router\node\render.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 70.6% (558/664)
+λ Bundled 9524ms node_modules\expo-router\node\render.js (864 modules)
+Web node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (852/852)
+Web Bundled 10198ms node_modules\expo-router\entry.js (863 modules)
+Web node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.8% (756/803)
+Web Bundled 3896ms node_modules\expo-router\entry.js (864 modules)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 42ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 396ms node_modules\expo-router\entry.js (1 module)
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 44ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 394ms node_modules\expo-router\entry.js (1 module)

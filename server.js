@@ -6,9 +6,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');         // ← adicione
 const nodemailer = require('nodemailer');
+const { OAuth2Client } = require('google-auth-library');
 
 const prisma = new PrismaClient();
 const app = express();
+const googleClient = new OAuth2Client();
 
 app.use(cors());
 app.use(express.json());
@@ -29,6 +31,42 @@ function cleanEmail(value) {
 
 function cleanPassword(value) {
   return typeof value === 'string' ? stripNullChars(value) : value;
+}
+
+function getGoogleAudiences() {
+  return [
+    cleanText(process.env.GOOGLE_WEB_CLIENT_ID),
+    cleanText(process.env.GOOGLE_ANDROID_CLIENT_ID),
+    cleanText(process.env.GOOGLE_IOS_CLIENT_ID)
+  ].filter(Boolean);
+}
+
+async function verifyGoogleIdToken(idToken) {
+  const audiences = getGoogleAudiences();
+
+  if (!audiences.length) {
+    throw new Error('GOOGLE_CLIENT_IDS_NOT_CONFIGURED');
+  }
+
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: audiences
+  });
+
+  const payload = ticket.getPayload();
+
+  if (!payload?.sub || !payload?.email || !payload.email_verified) {
+    throw new Error('INVALID_GOOGLE_TOKEN');
+  }
+
+  return {
+    googleId: cleanText(payload.sub),
+    email: cleanEmail(payload.email),
+    name:
+      cleanText(payload.name) ||
+      cleanText(payload.given_name) ||
+      cleanText(payload.email.split('@')[0])
+  };
 }
 
 // ==========================================
@@ -828,6 +866,7 @@ app.post('/reset-password', async (req, res) => {
 // ==========================================
 app.post('/auth/google', async (req, res) => {
   try {
+    return res.status(410).json({ error: 'This endpoint is deprecated. Use /auth/google-id-token.' });
     const google_id = cleanText(req.body.google_id);
     const name = cleanText(req.body.name);
     const email = cleanEmail(req.body.email);
@@ -880,6 +919,75 @@ app.post('/auth/google', async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Error with Google authentication.' });
+  }
+});
+
+app.post('/auth/google-id-token', async (req, res) => {
+  try {
+    const idToken = cleanText(req.body.idToken);
+
+    if (!idToken) {
+      return res.status(400).json({ error: 'Google ID token is required.' });
+    }
+
+    const { googleId, name, email } = await verifyGoogleIdToken(idToken);
+
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ google_id: googleId }, { email }] }
+    });
+
+    if (user) {
+      if (user.google_id && user.google_id !== googleId) {
+        return res.status(409).json({ error: 'This email is already linked to another Google account.' });
+      }
+
+      if (!user.google_id) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { google_id: googleId }
+        });
+      }
+    } else {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          google_id: googleId,
+          password_hash: crypto.randomBytes(32).toString('hex')
+        }
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful!',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        dark_theme: user.dark_theme,
+        created_at: user.created_at
+      }
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (error.message === 'GOOGLE_CLIENT_IDS_NOT_CONFIGURED') {
+      return res.status(500).json({ error: 'Google Sign-In is not configured on the server.' });
+    }
+
+    if (error.message === 'INVALID_GOOGLE_TOKEN') {
+      return res.status(401).json({ error: 'Invalid Google token.' });
+    }
+
     res.status(500).json({ error: 'Error with Google authentication.' });
   }
 });

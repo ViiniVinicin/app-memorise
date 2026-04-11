@@ -18,11 +18,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  loginWithGoogle: (
-    google_id: string,
-    name: string,
-    email: string,
-  ) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -68,12 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await login(email, password);
   }
 
-  async function loginWithGoogle(
-    google_id: string,
-    name: string,
-    email: string,
-  ) {
-    const data = await AuthService.googleAuth(google_id, name, email);
+  async function loginWithGoogle(idToken: string) {
+    const data = await AuthService.googleAuth(idToken);
     await saveSession(data);
   }
 

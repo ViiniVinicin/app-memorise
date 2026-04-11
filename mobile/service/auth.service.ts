@@ -29,10 +29,10 @@ export const AuthService = {
       body: JSON.stringify({ email }),
     }),
 
-  googleAuth: (google_id: string, name: string, email: string) =>
-    request("/auth/google", {
+  googleAuth: (idToken: string) =>
+    request("/auth/google-id-token", {
       method: "POST",
-      body: JSON.stringify({ google_id, name, email }),
+      body: JSON.stringify({ idToken }),
     }),
 
   getMe: (token: string) =>

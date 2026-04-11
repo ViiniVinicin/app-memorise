@@ -2,6 +2,7 @@ import { InputField } from "@/components/ui/input-field";
 import { Palette as P } from "@/constants/palette";
 import { Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/auth.context";
+import { useGoogleAuth } from "@/hooks/use-google-auth";
 import {
   Lexend_400Regular,
   Lexend_600SemiBold,
@@ -47,6 +48,7 @@ const orStyles = StyleSheet.create({
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -60,10 +62,12 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !senha) {
-      Alert.alert("Atenção", "Preencha e-mail e senha.");
+      Alert.alert("Atencao", "Preencha e-mail e senha.");
       return;
     }
+
     setLoading(true);
+
     try {
       await login(email, senha);
       router.replace("/(tabs)");
@@ -91,12 +95,7 @@ export default function LoginScreen() {
             >
               <Ionicons name="arrow-back" size={22} color={P.dark} />
             </TouchableOpacity>
-
-            {/*<Text style={styles.screenTitle}>MemoRise</Text>
-
-            <View style={styles.backBtn} />*/}
           </View>
-          {/*<View style={styles.separator} />*/}
 
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -137,18 +136,17 @@ export default function LoginScreen() {
               disabled={loading}
             >
               <Text style={styles.btnDarkText}>
-                {loading ? "Entrando..." : "Entre ↩"}
+                {loading ? "Entrando..." : "Entre ->"}
               </Text>
             </TouchableOpacity>
 
             <OrDivider />
 
             <TouchableOpacity
-              style={styles.btnGoogle}
+              style={[styles.btnGoogle, googleLoading && { opacity: 0.7 }]}
               activeOpacity={0.85}
-              onPress={() =>
-                Alert.alert("Em breve", "Login com Google disponível em breve.")
-              }
+              onPress={signInWithGoogle}
+              disabled={googleLoading}
             >
               <AntDesign
                 name="google"
@@ -156,11 +154,13 @@ export default function LoginScreen() {
                 color={P.white}
                 style={{ marginRight: 10 }}
               />
-              <Text style={styles.btnGoogleText}>Continue com Google</Text>
+              <Text style={styles.btnGoogleText}>
+                {googleLoading ? "Conectando..." : "Continue com Google"}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.bottomRow}>
-              <Text style={styles.bottomMuted}>Não tem uma conta? </Text>
+              <Text style={styles.bottomMuted}>Nao tem uma conta? </Text>
               <TouchableOpacity
                 onPress={() => router.push("/register")}
                 activeOpacity={0.7}
@@ -182,9 +182,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 32,
   },
-  scrollContent: {
-    //marginTop: 64,
-  },
+  scrollContent: {},
   screenHeader: {
     height: 80,
     flexDirection: "row",

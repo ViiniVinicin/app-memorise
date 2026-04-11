@@ -2,6 +2,7 @@ import { InputField } from "@/components/ui/input-field";
 import { Palette as P } from "@/constants/palette";
 import { Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/auth.context";
+import { useGoogleAuth } from "@/hooks/use-google-auth";
 import {
   Lexend_400Regular,
   Lexend_600SemiBold,
@@ -47,6 +48,7 @@ const orStyles = StyleSheet.create({
 
 export default function RegisterScreen() {
   const { register } = useAuth();
+  const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const router = useRouter();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -62,18 +64,22 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!nome || !email || !senha || !confirma) {
-      Alert.alert("Atenção", "Preencha todos os campos.");
+      Alert.alert("Atencao", "Preencha todos os campos.");
       return;
     }
+
     if (senha !== confirma) {
-      Alert.alert("Atenção", "As senhas não coincidem.");
+      Alert.alert("Atencao", "As senhas nao coincidem.");
       return;
     }
+
     if (senha.length < 6) {
-      Alert.alert("Atenção", "A senha deve ter pelo menos 6 caracteres.");
+      Alert.alert("Atencao", "A senha deve ter pelo menos 6 caracteres.");
       return;
     }
+
     setLoading(true);
+
     try {
       await register(nome, email, senha);
       router.replace("/(tabs)");
@@ -114,7 +120,7 @@ export default function RegisterScreen() {
         >
           <Text style={styles.pageTitle}>Criar Conta</Text>
           <Text style={styles.subtitle}>
-            {"Junte-se ao MemoRise para dominar\nsua memória com nossos cards."}
+            {"Junte-se ao MemoRise para dominar\nsua memoria com nossos cards."}
           </Text>
 
           <InputField
@@ -165,11 +171,10 @@ export default function RegisterScreen() {
           <OrDivider />
 
           <TouchableOpacity
-            style={styles.btnGoogle}
+            style={[styles.btnGoogle, googleLoading && { opacity: 0.7 }]}
             activeOpacity={0.85}
-            onPress={() =>
-              Alert.alert("Em breve", "Login com Google disponível em breve.")
-            }
+            onPress={signInWithGoogle}
+            disabled={googleLoading}
           >
             <AntDesign
               name="google"
@@ -177,11 +182,13 @@ export default function RegisterScreen() {
               color={P.white}
               style={{ marginRight: 10 }}
             />
-            <Text style={styles.btnGoogleText}>Continue com Google</Text>
+            <Text style={styles.btnGoogleText}>
+              {googleLoading ? "Conectando..." : "Continue com Google"}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.bottomRow}>
-            <Text style={styles.bottomMuted}>Já tem uma conta? </Text>
+            <Text style={styles.bottomMuted}>Ja tem uma conta? </Text>
             <TouchableOpacity
               onPress={() => router.push("/login")}
               activeOpacity={0.7}

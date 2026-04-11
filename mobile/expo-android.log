@@ -1,0 +1,9 @@
+
+> app-memorise-mobile@1.0.0 start
+> expo start --android
+
+env: load .env.local
+env: export EXPO_PUBLIC_API_URL
+Starting project at D:\Programming\Projects\app-memorise\app-memorise\mobile
+› Port 8081 is being used by another process
+› Skipping dev server
