@@ -10,7 +10,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/lexend";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -41,13 +41,13 @@ const orStyles = StyleSheet.create({
   text: {
     marginHorizontal: 12,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semibold,
     color: P.textMuted,
   },
 });
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, token, isLoading: authLoading } = useAuth();
   const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -59,6 +59,14 @@ export default function LoginScreen() {
     Lexend_600SemiBold,
     Lexend_700Bold,
   });
+
+  if (authLoading) {
+    return null;
+  }
+
+  if (token) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   const handleLogin = async () => {
     if (!email || !senha) {
@@ -206,7 +214,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontSize: 28,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     color: P.dark,
     marginBottom: 64,
   },
@@ -217,7 +225,7 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semibold,
     color: P.primary,
   },
   btnDark: {
@@ -230,7 +238,7 @@ const styles = StyleSheet.create({
   btnDarkText: {
     color: P.white,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   btnGoogle: {
     backgroundColor: P.primary,
@@ -243,7 +251,7 @@ const styles = StyleSheet.create({
   btnGoogleText: {
     color: P.white,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   bottomRow: {
     flexDirection: "row",
@@ -251,6 +259,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 32,
   },
-  bottomMuted: { fontSize: 13, color: P.textMuted },
-  bottomBold: { fontSize: 13, fontWeight: "700", color: P.dark },
+  bottomMuted: { fontSize: 13, fontFamily: Fonts.regular, color: P.textMuted },
+  bottomBold: { fontSize: 13, fontFamily: Fonts.bold, color: P.dark },
 });

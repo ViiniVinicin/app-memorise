@@ -1,45 +1,52 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+import { authenticatedRequest, request } from "@/service/api.service";
 
-async function request(path: string, options?: RequestInit) {
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? "Unexpected error");
-  return data;
-}
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  dark_theme: boolean;
+  created_at?: string;
+  _count?: {
+    decks: number;
+  };
+};
+
+type MessageResponse = {
+  message: string;
+};
+
+type AuthSession = {
+  message: string;
+  token: string;
+  user: AuthUser;
+};
 
 export const AuthService = {
   register: (name: string, email: string, password: string) =>
-    request("/register", {
+    request<MessageResponse>("/register", {
       method: "POST",
       body: JSON.stringify({ name, email, password }),
     }),
 
   login: (email: string, password: string) =>
-    request("/login", {
+    request<AuthSession>("/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
 
   forgotPassword: (email: string) =>
-    request("/forgot-password", {
+    request<MessageResponse>("/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
 
   googleAuth: (idToken: string) =>
-    request("/auth/google-id-token", {
+    request<AuthSession>("/auth/google-id-token", {
       method: "POST",
       body: JSON.stringify({ idToken }),
     }),
 
   getMe: (token: string) =>
-    request("/me", {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+    authenticatedRequest<AuthUser>(token, "/me"),
 };

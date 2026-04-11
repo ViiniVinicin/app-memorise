@@ -1,6 +1,7 @@
 import { Palette as P } from '@/constants/palette';
 import { ms, rs, screen, vs } from '@/constants/responsive';
 import { Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/auth.context';
 import {
   Lexend_400Regular,
   Lexend_600SemiBold,
@@ -8,7 +9,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/lexend';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import {
   Image,
   StatusBar,
@@ -20,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen() {
+  const { token, isLoading } = useAuth();
   const [fontsLoaded] = useFonts({
     Lexend_400Regular,
     Lexend_600SemiBold,
@@ -28,7 +30,8 @@ export default function WelcomeScreen() {
 
   const router = useRouter();
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || isLoading) return null;
+  if (token) return <Redirect href="/(tabs)" />;
 
   return (
     <SafeAreaView style={styles.safe}>

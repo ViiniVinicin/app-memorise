@@ -10,7 +10,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/lexend";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -41,13 +41,13 @@ const orStyles = StyleSheet.create({
   text: {
     marginHorizontal: 12,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semibold,
     color: P.textMuted,
   },
 });
 
 export default function RegisterScreen() {
-  const { register } = useAuth();
+  const { register, token, isLoading: authLoading } = useAuth();
   const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const router = useRouter();
   const [nome, setNome] = useState("");
@@ -61,6 +61,14 @@ export default function RegisterScreen() {
     Lexend_600SemiBold,
     Lexend_700Bold,
   });
+
+  if (authLoading) {
+    return null;
+  }
+
+  if (token) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   const handleRegister = async () => {
     if (!nome || !email || !senha || !confirma) {
@@ -242,6 +250,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
+    fontFamily: Fonts.regular,
     color: P.dark,
     textAlign: "center",
     lineHeight: 20,
@@ -279,6 +288,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 32,
   },
-  bottomMuted: { fontSize: 13, color: P.textMuted },
+  bottomMuted: { fontSize: 13, fontFamily: Fonts.regular, color: P.textMuted },
   bottomBold: { fontSize: 13, fontFamily: Fonts.bold, color: P.primary },
 });

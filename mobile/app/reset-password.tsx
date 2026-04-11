@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     height: 120,
     alignSelf: "center",
     borderRadius: 26,
-    backgroundColor: "rgba(46, 40, 50, 0.1)",
+    backgroundColor: P.containerBg,
     borderWidth: 1.8,
     borderColor: P.dark,
     alignItems: "center",
